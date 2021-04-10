@@ -2,7 +2,7 @@
   "name": "db-manager",
   "version": "0.0.1",
   "preferGlobal": true,
-  "description": "A Command Line Interface to Help Developers interact with their MongoDB or Quick.DB Database.",
+  "description": "A Command Line Interface to Help Developers interact with their QuickMongo or Quick.DB Database.",
   "main": "src/index.js",
   "bin": {
     "db-manager": "src/index.js"
