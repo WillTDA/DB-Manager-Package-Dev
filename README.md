@@ -1,4 +1,4 @@
-# DB Manager
+# Quick DB Manager
 
 A Command Line Interface to Help Developers interact with their [QuickMongo](https://npmjs.com/package/quickmongo) or [Quick.DB](https://npmjs.com/package/quick.db) Database.
 
@@ -10,7 +10,7 @@ Since this package is a CLI, it's preferred that you install this globally.
 
 To Launch the CLI, type:
 
-`db-manager`
+`quick-db-manager` or simply `db-manager`
 
 # Step One: Choose your Package
 
