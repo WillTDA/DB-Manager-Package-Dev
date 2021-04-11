@@ -34,7 +34,7 @@ If you're using [Quick.DB](https://npmjs.com/package/quick.db), you'll need to E
 
 # Step Three: Root Menu
 
-Once you've entered the required details, you'll be at the Root Menu! Here's what the Menu will look Like
+Once you've entered the required details, you'll be at the Root Menu! Here's what the Menu will look like.
 
 ![Root Menu Example](https://github.com/WillTDA/DB-Manager-Package-Dev/blob/master/src/images/menu_quickdb.jpg?raw=true)
 
