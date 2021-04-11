@@ -6,7 +6,7 @@ A Command Line Interface to Help Developers interact with their [QuickMongo](htt
 
 Since this package is a CLI, it's preferred that you install this globally.
 
-`npm i -g db-manager`
+`npm i -g quick-db-manager`
 
 To Launch the CLI, type:
 
