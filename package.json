@@ -1,6 +1,6 @@
 {
   "name": "quick-db-manager",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "preferGlobal": true,
   "description": "A Command Line Interface to Help Developers interact with their Quick.DB or QuickMongo Database.",
   "main": "src/index.js",
