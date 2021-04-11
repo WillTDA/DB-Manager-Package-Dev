@@ -10,14 +10,14 @@ async function selectMode() {
         message: '[Step 1/2] - Which NPM Package do you use to Operate your Database?',
         choices: [
             {
-                name: 'QuickMongo',
-                description: 'Enter your MongoURI to Access your Database.',
-                value: "cloud",
-            },
-            {
                 name: 'Quick.DB',
                 description: 'Enter the File Path to Your "json.sqlite" File to Access your Database.',
                 value: "local",
+            },
+            {
+                name: 'QuickMongo',
+                description: 'Enter your MongoURI to Access your Database.',
+                value: "cloud",
             },
         ],
     })
