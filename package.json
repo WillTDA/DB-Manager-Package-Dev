@@ -17,6 +17,7 @@
     "mongoose",
     "mongodb",
     "quickdb",
+    "quick.db",
     "db",
     "database"
   ],
