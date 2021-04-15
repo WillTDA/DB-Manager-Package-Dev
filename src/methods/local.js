@@ -1,7 +1,6 @@
 #!/usr/bin/env node
 const { log } = require("console");
 const fs = require("fs");
-const cmd = require("child_process")
 const selection = require("@inquirer/select");
 const input = require("@inquirer/input");
 const showData = require("../functions/showData");
@@ -46,7 +45,7 @@ async function main() {
             }
         }
 
-        db = require("@devsnowflake/quick.db").static(dbPath)
+        db = require("../../quick.db").static(dbPath)
 
         log("Successfully Linked to Quick.DB/SQLite File!")
         log(`\nWelcome to DB-Manager's Root Menu!\nMode: Quick.DB/SQLite Database\nFile Path: ${dbPath}`)

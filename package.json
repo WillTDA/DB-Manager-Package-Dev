@@ -24,10 +24,11 @@
   "author": "WillTDA",
   "license": "ISC",
   "dependencies": {
-    "@devsnowflake/quick.db": "^2.0.3",
     "@inquirer/input": "0.0.14-alpha.0",
     "@inquirer/password": "0.0.13-alpha.0",
     "@inquirer/select": "0.0.14-alpha.0",
+    "better-sqlite3": "^7.1.5",
+    "lodash": "^4.17.21",
     "quickmongo": "^3.0.2"
   }
 }
