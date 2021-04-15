@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 const { log } = require("console");
 const fs = require("fs");
+const cmd = require("child_process")
 const selection = require("@inquirer/select");
 const input = require("@inquirer/input");
 const showData = require("../functions/showData");
@@ -17,11 +18,11 @@ async function main() {
     try {
         let db;
         log("\nVerifying File Path...\n")
-        if(dbPath === "") return createErrorMessage("No File Path was Provided!")
-        if(!dbPath.includes(":")) return createErrorMessage(`"${dbPath}" Is Not a Valid Directory!`)
-        if(!dbPath.endsWith("json.sqlite")) return createErrorMessage(`"${dbPath}" Is Not a Quick.DB/SQLite File!`)
-        if(!fs.existsSync(dbPath.replace(/json.sqlite(?!.*json.sqlite)/, ""))) return createErrorMessage(`"${dbPath.replace(/json.sqlite(?!.*json.sqlite)/, "")}" is a Non-Existent Folder!`)
-        if(!fs.existsSync(dbPath)) {
+        if (dbPath === "") return createErrorMessage("No File Path was Provided!")
+        if (!dbPath.includes(":")) return createErrorMessage(`"${dbPath}" Is Not a Valid Directory!`)
+        if (!dbPath.endsWith("json.sqlite")) return createErrorMessage(`"${dbPath}" Is Not a Quick.DB/SQLite File!`)
+        if (!fs.existsSync(dbPath.replace(/json.sqlite(?!.*json.sqlite)/, ""))) return createErrorMessage(`"${dbPath.replace(/json.sqlite(?!.*json.sqlite)/, "")}" is a Non-Existent Folder!`)
+        if (!fs.existsSync(dbPath)) {
             let answer = await selection({
                 message: `There is No Quick.DB/SQLite File at "${dbPath}".\nWould you Like to Create One There?`,
                 choices: [
@@ -85,6 +86,11 @@ async function main() {
                         value: "fetch",
                     },
                     {
+                        name: 'Search',
+                        description: 'Search for Entries in the Database and Get their Data.',
+                        value: "search",
+                    },
+                    {
                         name: 'Fetch All',
                         description: 'Retrieve All Entries from the Database.',
                         value: "fetchall",
@@ -128,6 +134,86 @@ async function main() {
                 }
                 showData(JSON.stringify(data, null, 4))
                 return promptRootMenu()
+            }
+            else if (operation === "search") {
+                let searchTerm = await input({
+                    message: 'Please Enter a Search Term to Look for Entries with an ID that starts with it:\n'
+                })
+                if (!searchTerm) {
+                    createErrorMessage("No Search Term was Provided!")
+                    return rootMenu()
+                }
+
+                let searchResults = await db.startsWith(searchTerm)
+                if (searchResults == null || searchResults.length == 0 || searchResults == "[]" || searchResults == []) {
+                    showData(`There are No Entries that have an ID starting with "${searchTerm}"!`)
+                    return promptRootMenu()
+                }
+
+                let resultList = "";
+
+                for (let i =- 0; i < searchResults.length; i++) {
+                    resultList += `${i + 1}) "${searchResults[i].ID}"\n`
+                }
+
+                async function showResults() {
+                    process.removeAllListeners()
+                    showData(`Showing ${searchResults.length} Result(s) for "${searchTerm}":\n\n${resultList}`)
+                    let selectedEntry = await input({
+                        message: 'Type the Number of the corresponding Entry ID to look at its data\nYou can also type nothing and hit Enter to go back to the Root Menu.'
+                    })
+                    if (!selectedEntry) {
+                        return rootMenu()
+                    }
+                    if (isNaN(selectedEntry)) {
+                        createErrorMessage("The Input Entered was Not a Number!")
+                        return rootMenu()
+                    }
+                    if (selectedEntry <= 0 || selectedEntry >= searchResults.length + 1) {
+                        createErrorMessage("The Input Entered was an Invalid Selection!")
+                        return rootMenu()
+                    }
+
+                    let data = {
+                        ID: searchResults[Number(selectedEntry) - 1].ID,
+                        data: searchResults[Number(selectedEntry) - 1].data
+                    }
+
+                    process.removeAllListeners()
+
+                    showData(JSON.stringify(data, null, 4))
+                    let answer = await selection({
+                        message: `Would you like to look at another entry, go back to the Root Menu, or close the program?`,
+                        choices: [
+                            {
+                                name: 'Look at Another Entry',
+                                description: `Take a look at another entry from the results.`,
+                                value: 1,
+                            },
+                            {
+                                name: 'Root Menu',
+                                description: 'Go back to the Root Menu',
+                                value: 2,
+                            },
+                            {
+                                name: 'Exit Program',
+                                description: 'Close this Program.',
+                                value: 3,
+                            },
+                        ],
+                    })
+                    if (answer === 1) {
+                        return showResults()
+                    }
+                    else if (answer === 2) {
+                        return rootMenu()
+                    }
+                    else if (answer === 3) {
+                        return process.exit();
+                    }
+
+                }
+                showResults()
             }
             else if (operation === "fetchall") {
                 let data = await db.fetchAll()

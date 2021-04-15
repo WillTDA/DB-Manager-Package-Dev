@@ -57,6 +57,11 @@ async function main() {
                         value: "fetch",
                     },
                     {
+                        name: 'Search',
+                        description: 'Search for Entries in the Database and Get their Data.',
+                        value: "search",
+                    },
+                    {
                         name: 'Fetch All',
                         description: 'Retrieve All Entries from the Database.',
                         value: "fetchall",
@@ -100,6 +105,86 @@ async function main() {
                 }
                 showData(JSON.stringify(data, null, 4))
                 return promptRootMenu()
+            }
+            else if (operation === "search") {
+                let searchTerm = await input({
+                    message: 'Please Enter a Search Term to Look for Entries with an ID that starts with it:\n'
+                })
+                if (!searchTerm) {
+                    createErrorMessage("No Search Term was Provided!")
+                    return rootMenu()
+                }
+
+                let searchResults = await db.startsWith(searchTerm)
+                if (searchResults == null || searchResults.length == 0 || searchResults == "[]" || searchResults == []) {
+                    showData(`There are No Entries that have an ID starting with "${searchTerm}"!`)
+                    return promptRootMenu()
+                }
+
+                let resultList = "";
+
+                for (let i =- 0; i < searchResults.length; i++) {
+                    resultList += `${i + 1}) "${searchResults[i].ID}"\n`
+                }
+
+                async function showResults() {
+                    process.removeAllListeners()
+                    showData(`Showing ${searchResults.length} Result(s) for "${searchTerm}":\n\n${resultList}`)
+                    let selectedEntry = await input({
+                        message: 'Type the Number of the corresponding Entry ID to look at its data\nYou can also type nothing and hit Enter to go back to the Root Menu.'
+                    })
+                    if (!selectedEntry) {
+                        return rootMenu()
+                    }
+                    if (isNaN(selectedEntry)) {
+                        createErrorMessage("The Input Entered was Not a Number!")
+                        return rootMenu()
+                    }
+                    if (selectedEntry <= 0 || selectedEntry >= searchResults.length + 1) {
+                        createErrorMessage("The Input Entered was an Invalid Selection!")
+                        return rootMenu()
+                    }
+
+                    let data = {
+                        ID: searchResults[Number(selectedEntry) - 1].ID,
+                        data: searchResults[Number(selectedEntry) - 1].data
+                    }
+
+                    process.removeAllListeners()
+
+                    showData(JSON.stringify(data, null, 4))
+                    let answer = await selection({
+                        message: `Would you like to look at another entry, go back to the Root Menu, or close the program?`,
+                        choices: [
+                            {
+                                name: 'Look at Another Entry',
+                                description: `Take a look at another entry from the results.`,
+                                value: 1,
+                            },
+                            {
+                                name: 'Root Menu',
+                                description: 'Go back to the Root Menu',
+                                value: 2,
+                            },
+                            {
+                                name: 'Exit Program',
+                                description: 'Close this Program.',
+                                value: 3,
+                            },
+                        ],
+                    })
+                    if (answer === 1) {
+                        return showResults()
+                    }
+                    else if (answer === 2) {
+                        return rootMenu()
+                    }
+                    else if (answer === 3) {
+                        return process.exit();
+                    }
+
+                }
+                showResults()
             }
             else if (operation === "fetchall") {
                 let data = await db.fetchAll()
