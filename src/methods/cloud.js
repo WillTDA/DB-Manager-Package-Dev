@@ -1,6 +1,10 @@
 #!/usr/bin/env node
 const { Database } = require("quickmongo");
 const { log } = require("console");
+const fs = require("fs");
+const convertToExcel = require("json2xls");
+const Blob = require("cross-blob");
+const XLSX = require("xlsx");
 const password = require("@inquirer/password");
 const selection = require("@inquirer/select");
 const input = require("@inquirer/input");
@@ -82,6 +86,11 @@ async function main() {
                         value: "deleteall",
                     },
                     {
+                        name: 'Export to Spreadsheet (Microsoft Excel) [BETA]',
+                        description: 'Create a Spreadsheet with All Entries from the Database.',
+                        value: "msxl",
+                    }, //CREATE EXPORT TO QUICK.DB
+                    {
                         name: 'Exit Program',
                         description: 'Close this Program.',
                         value: "exit",
@@ -123,7 +132,7 @@ async function main() {
 
                 let resultList = "";
 
-                for (let i =- 0; i < searchResults.length; i++) {
+                for (let i = - 0; i < searchResults.length; i++) {
                     resultList += `${i + 1}) "${searchResults[i].ID}"\n`
                 }
 
@@ -299,6 +308,93 @@ async function main() {
                     return rootMenu()
                 }
             }
+            else if (operation === "msxl") {
+                let data = await db.fetchAll()
+
+                if (data == null || data.length == 0 || data == "[]" || data == []) {
+                    createErrorMessage("There is No Data to Export!")
+                    return rootMenu()
+                }
+
+                let msxlPath = await input({
+                    message: 'Please Enter the File Path to where you want to Save the Spreadsheet/Excel File to:\n'
+                })
+
+                msxlPath = String(msxlPath).replace(/\//g, "\\").replace(/"/g, '')
+
+                let msxlPathDir = String(msxlPath).split("\\")
+                msxlPathDir.pop()
+
+                let answer;
+                log("\nVerifying File Path...\n")
+                if (msxlPath === "") {
+                    createErrorMessage("No File Path was Provided!")
+                    return rootMenu()
+                }
+                if (!msxlPath.includes(":")) {
+                    createErrorMessage(`"${msxlPath}" Is Not a Valid Directory!`)
+                    return rootMenu()
+                }
+                if (!msxlPath.endsWith(".xlsx")) {
+                    createErrorMessage(`"${msxlPath}" Is Not a Microsoft Excel File!\nExample: "C:/Users/ACCOUNT_NAME/Documents/spreadsheet.xlsx"`)
+                    return rootMenu()
+                }
+                if (!fs.existsSync(msxlPathDir.join("\\"))) {
+                    createErrorMessage(`"${msxlPathDir.join("\\")}" is a Non-Existent Folder!`)
+                    return rootMenu()
+                }
+                if (fs.existsSync(msxlPath)) {
+                    answer = await selection({
+                        message: `There is already a Microsoft Excel File at "${msxlPath}".\nWould you Like to Overwrite it?`,
+                        choices: [
+                            {
+                                name: 'Yes',
+                                description: `Replace the Existing Microsoft Excel File at "${msxlPath}".`,
+                                value: 1,
+                            },
+                            {
+                                name: 'No',
+                                description: 'Go Back to the Root Menu. The existing file won\'t be overwritten.',
+                                value: 2,
+                            },
+                        ],
+                    })
+                } else {
+                    answer = await selection({
+                        message: `Are you Sure you want to Export All Data to ${msxlPath}?`,
+                        choices: [
+                            {
+                                name: 'Yes',
+                                description: `Export All Data to "${msxlPath}".`,
+                                value: 1,
+                            },
+                            {
+                                name: 'No',
+                                description: 'Go Back to the Root Menu. Your Data won\'t be Exported.',
+                                value: 2,
+                            },
+                        ],
+                    })
+                }
+                if (answer === 1) {
+                    const worksheet = XLSX.utils.json_to_sheet(data)
+                    const workbook = {
+                        Sheets: {
+                            "data": worksheet
+                        },
+                        SheetNames: ["data"]
+                    };
+                    const excelBuffer = XLSX.write(workbook, { bookType: "xlsx", type: "array" })
+                    const blob = new Blob([excelBuffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8" })
+                    const fileData = Buffer.from(await blob.arrayBuffer())
+                    fs.writeFileSync(msxlPath, fileData)
+                    showData(`Successfully Exported all Data to "${msxlPath}"!`)
+                    return promptRootMenu()
+                }
+                else if (answer === 2) {
+                    return rootMenu();
+                }
+            }
             else if (operation === "exit") {
                 process.exit();
             }
@@ -307,6 +403,7 @@ async function main() {
         await rootMenu();
     } catch (e) {
         createErrorMessage("No/Invalid MongoDB URI was Provided!")
+        log(e)
     }
 }
 main();

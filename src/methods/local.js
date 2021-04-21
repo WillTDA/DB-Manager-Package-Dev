@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 const { log } = require("console");
 const fs = require("fs");
+const XLSX = require("xlsx");
 const selection = require("@inquirer/select");
 const input = require("@inquirer/input");
 const showData = require("../functions/showData");
@@ -12,14 +13,14 @@ async function main() {
         message: '[Step 2/2] - Please Enter the File Path to Your "json.sqlite" File Below to Connect to your Database!\n\nIf it doesn\'t exist, you\'ll be prompted if you wish to make one.\n'
     })
 
-    dbPath = await dbPath.replace(/"/g, '')
+    dbPath = await dbPath.replace(/\//g, "\\").replace(/"/g, '')
 
     try {
         let db;
         log("\nVerifying File Path...\n")
         if (dbPath === "") return createErrorMessage("No File Path was Provided!")
         if (!dbPath.includes(":")) return createErrorMessage(`"${dbPath}" Is Not a Valid Directory!`)
-        if (!dbPath.endsWith("json.sqlite")) return createErrorMessage(`"${dbPath}" Is Not a Quick.DB/SQLite File!`)
+        if (!dbPath.endsWith("json.sqlite")) return createErrorMessage(`"${dbPath}" Is Not a Quick.DB/SQLite File!\nExample: "C:/Users/ACCOUNT_NAME/Documents/json.sqlite"`)
         if (!fs.existsSync(dbPath.replace(/json.sqlite(?!.*json.sqlite)/, ""))) return createErrorMessage(`"${dbPath.replace(/json.sqlite(?!.*json.sqlite)/, "")}" is a Non-Existent Folder!`)
         if (!fs.existsSync(dbPath)) {
             let answer = await selection({
@@ -110,6 +111,11 @@ async function main() {
                         value: "deleteall",
                     },
                     {
+                        name: 'Export to Spreadsheet (Microsoft Excel) [BETA]',
+                        description: 'Create a Spreadsheet with All Entries from the Database.',
+                        value: "msxl",
+                    }, //CREATE EXPORT TO QUICKMONGO
+                    {
                         name: 'Exit Program',
                         description: 'Close this Program.',
                         value: "exit",
@@ -151,7 +157,7 @@ async function main() {
 
                 let resultList = "";
 
-                for (let i =- 0; i < searchResults.length; i++) {
+                for (let i = - 0; i < searchResults.length; i++) {
                     resultList += `${i + 1}) "${searchResults[i].ID}"\n`
                 }
 
@@ -325,6 +331,93 @@ async function main() {
                 }
                 else if (answer === 2) {
                     return rootMenu()
+                }
+            }
+            else if (operation === "msxl") {
+                let data = await db.fetchAll()
+
+                if (data == null || data.length == 0 || data == "[]" || data == []) {
+                    createErrorMessage("There is No Data to Export!")
+                    return rootMenu()
+                }
+
+                let msxlPath = await input({
+                    message: 'Please Enter the File Path to where you want to Save the Spreadsheet/Excel File to:\n'
+                })
+
+                msxlPath = String(msxlPath).replace(/\//g, "\\").replace(/"/g, '')
+
+                let msxlPathDir = String(msxlPath).split("\\")
+                msxlPathDir.pop()
+
+                let answer;
+                log("\nVerifying File Path...\n")
+                if (msxlPath === "") {
+                    createErrorMessage("No File Path was Provided!")
+                    return rootMenu()
+                }
+                if (!msxlPath.includes(":")) {
+                    createErrorMessage(`"${msxlPath}" Is Not a Valid Directory!`)
+                    return rootMenu()
+                }
+                if (!msxlPath.endsWith(".xlsx")) {
+                    createErrorMessage(`"${msxlPath}" Is Not a Microsoft Excel File!\nExample: "C:/Users/ACCOUNT_NAME/Documents/spreadsheet.xlsx"`)
+                    return rootMenu()
+                }
+                if (!fs.existsSync(msxlPathDir.join("\\"))) {
+                    createErrorMessage(`"${msxlPathDir.join("\\")}" is a Non-Existent Folder!`)
+                    return rootMenu()
+                }
+                if (fs.existsSync(msxlPath)) {
+                    answer = await selection({
+                        message: `There is already a Microsoft Excel File at "${msxlPath}".\nWould you Like to Overwrite it?`,
+                        choices: [
+                            {
+                                name: 'Yes',
+                                description: `Replace the Existing Microsoft Excel File at "${msxlPath}".`,
+                                value: 1,
+                            },
+                            {
+                                name: 'No',
+                                description: 'Go Back to the Root Menu. The existing file won\'t be overwritten.',
+                                value: 2,
+                            },
+                        ],
+                    })
+                } else {
+                    answer = await selection({
+                        message: `Are you Sure you want to Export All Data to ${msxlPath}?`,
+                        choices: [
+                            {
+                                name: 'Yes',
+                                description: `Export All Data to "${msxlPath}".`,
+                                value: 1,
+                            },
+                            {
+                                name: 'No',
+                                description: 'Go Back to the Root Menu. Your Data won\'t be Exported.',
+                                value: 2,
+                            },
+                        ],
+                    })
+                }
+                if (answer === 1) {
+                    const worksheet = XLSX.utils.json_to_sheet(data)
+                    const workbook = {
+                        Sheets: {
+                            "data": worksheet
+                        },
+                        SheetNames: ["data"]
+                    };
+                    const excelBuffer = XLSX.write(workbook, { bookType: "xlsx", type: "array" })
+                    const blob = new Blob([excelBuffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8" })
+                    const fileData = Buffer.from(await blob.arrayBuffer())
+                    fs.writeFileSync(msxlPath, fileData)
+                    showData(`Successfully Exported all Data to "${msxlPath}"!`)
+                    return promptRootMenu()
+                }
+                else if (answer === 2) {
+                    return rootMenu();
                 }
             }
             else if (operation === "exit") {
