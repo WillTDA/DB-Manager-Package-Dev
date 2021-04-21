@@ -2,7 +2,6 @@
 const { Database } = require("quickmongo");
 const { log } = require("console");
 const fs = require("fs");
-const convertToExcel = require("json2xls");
 const Blob = require("cross-blob");
 const XLSX = require("xlsx");
 const password = require("@inquirer/password");
